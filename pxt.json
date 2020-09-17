@@ -1,0 +1,13 @@
+{
+    "name": "MULTINUNCHUCK",
+    "version": "0.1.0",
+    "dependencies": {
+        "core": "*"
+    },
+    "description": "Blocks to read from Nintendo Nunchuck",
+    "files": [
+        "multiNunchuck.ts",
+        "README.md"
+    ],
+    "public": true
+}
