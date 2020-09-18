@@ -5,12 +5,7 @@
 
 let _addr = 0x52;
 
-let byte6 = 0;
-let byte5 = 0;
-let byte4 = 0;
-let byte3 = 0;
-let byte2 = 0;
-let byte1 = 0;
+var nunchuckByteArray = new Uint8Array(24); // 6 bytes * 4 controller
 
 
 enum CTRL_STATE {
@@ -36,22 +31,42 @@ enum CTRL_STATE {
 }
 
 
+let _pca9546ai2cAddr = 0x70;
+let _lastActiveChannel = 0;
+
 enum ADDRESS {                     // address for Nunchuck
-    //% block=0x52
-    A52 = 0x52,               // 
-    //% block=0x53
-    A53 = 0x53              // 
+    //% block=0x70
+    A0x70 = 0x70,               // 
+    //% block=0x71
+    A0x71 = 0x71,              // 
+    //% block=0x72
+    A0x72 = 0x72,              // 
+    //% block=0x73
+    A0x73 = 0x73,              // 
+    //% block=0x74
+    A0x74 = 0x74,              //
+    //% block=0x75
+    A0x75 = 0x75,              // 
+    //% block=0x76
+    A0x76 = 0x76,              // 
+    //% block=0x77
+    A0x77 = 0x77,              //  
 }
+
+
 
 /**
  * Blocks
  */
-//% weight=100 color=#0fbc12 icon="\uf11b" block="MULTINUNCHUCK"
+//% weight=100 color=#0fbc12 icon="\uf11b" block="MultiNunchuck"
 
 namespace MULTINUNCHUCK {
-    //% block="Initialize Nunchuck at i2c Address |addr %addr" 
-    export function initAddr(addr: ADDRESS) {
-        _addr = addr;
+    //% block="Initialize Nunchuck at Channel %channel" 
+    //% channel.min=1 group.max=4
+    export function initNunchuck(channel: number) {
+        _addr = 0x52;
+
+        PCA9546SelectChannel(channel, true)
 
         pins.i2cWriteNumber(
         _addr,
@@ -70,8 +85,12 @@ namespace MULTINUNCHUCK {
         basic.pause(100)
     }
 
-    //% block="Read Nunchuck to buffer"
-    export function ReadToBuffer() {
+    //% block="Read Nunchuck at Channel %channel to buffer"
+    //% channel.min=1 group.max=4
+    export function ReadToBuffer(channel: number) {
+        let arrayStartIndex = channel * 6
+        PCA9546SelectChannel(channel, true)
+
         pins.i2cWriteNumber(
             _addr,
             0,      // 0x00
@@ -79,17 +98,27 @@ namespace MULTINUNCHUCK {
             false
         )
         basic.pause(250)
-        byte1 = pins.i2cReadNumber(82, NumberFormat.UInt8LE, true)
-        byte2 = pins.i2cReadNumber(82, NumberFormat.UInt8LE, true)
-        byte3 = pins.i2cReadNumber(82, NumberFormat.UInt8LE, true)
-        byte4 = pins.i2cReadNumber(82, NumberFormat.UInt8LE, true)
-        byte5 = pins.i2cReadNumber(82, NumberFormat.UInt8LE, true)
-        byte6 = pins.i2cReadNumber(82, NumberFormat.UInt8LE, false)
+        nunchuckByteArray[arrayStartIndex + 0] = pins.i2cReadNumber(82, NumberFormat.UInt8LE, true)
+        nunchuckByteArray[arrayStartIndex + 1] = pins.i2cReadNumber(82, NumberFormat.UInt8LE, true)
+        nunchuckByteArray[arrayStartIndex + 2] = pins.i2cReadNumber(82, NumberFormat.UInt8LE, true)
+        nunchuckByteArray[arrayStartIndex + 3] = pins.i2cReadNumber(82, NumberFormat.UInt8LE, true)
+        nunchuckByteArray[arrayStartIndex + 4] = pins.i2cReadNumber(82, NumberFormat.UInt8LE, true)
+        nunchuckByteArray[arrayStartIndex + 5] = pins.i2cReadNumber(82, NumberFormat.UInt8LE, false)
     }
     
 
-    //% block="Decipher Nunchuck buffer for State %ctrlState"
-    export function ReadState(ctrlState: CTRL_STATE): number {
+    //% block="Decipher buffer of Nunchuck at Channel %channel for State %ctrlState"
+    //% channel.min=1 group.max=4
+    export function ReadState(channel: number, ctrlState: CTRL_STATE): number {
+        let arrayStartIndex = channel * 6
+
+        let byte6 = nunchuckByteArray[arrayStartIndex + 5];
+        let byte5 = nunchuckByteArray[arrayStartIndex + 4];
+        let byte4 = nunchuckByteArray[arrayStartIndex + 3];
+        let byte3 = nunchuckByteArray[arrayStartIndex + 2];
+        let byte2 = nunchuckByteArray[arrayStartIndex + 1];
+        let byte1 = nunchuckByteArray[arrayStartIndex + 0];
+
         if (ctrlState == CTRL_STATE.UP) {
             return (byte2 > 150) ? 1: 0;
         }
@@ -122,25 +151,86 @@ namespace MULTINUNCHUCK {
 
     }
 
-    //% block="RollAngle from Nunchuck buffer"
-    export function rollAngle(): number {
+    //% block="RollAngle from buffer of Nunchuck at Channel %channel"
+    //% channel.min=1 group.max=4
+    export function rollAngle(channel: number): number {
+        let arrayStartIndex = channel * 6
+
+        let byte6 = nunchuckByteArray[arrayStartIndex + 5];
+        let byte5 = nunchuckByteArray[arrayStartIndex + 4];
+        let byte4 = nunchuckByteArray[arrayStartIndex + 3];
+        let byte3 = nunchuckByteArray[arrayStartIndex + 2];
+        let byte2 = nunchuckByteArray[arrayStartIndex + 1];
+        let byte1 = nunchuckByteArray[arrayStartIndex + 0];
+
         let accelX = ((byte3 << 2) | ((byte6 >> 2) & 0x3))
         let accelY = ((byte4 << 2) | ((byte6 >> 4) & 0x3))
         let accelZ = ((byte5 << 2) | ((byte6 >> 6) & 0x3))
         return (Math.atan2((accelX - 511.0), (accelZ - 511.0)) * 180.0 / Math.PI);
-        
     }
 
-    //% block="PitchAngle from Nunchuck buffer"
-    export function pitchAngle(): number {
+    //% block="PitchAngle from buffer of Nunchuck at Channel %channel"
+    //% channel.min=1 group.max=4
+    export function pitchAngle(channel: number): number {
+        let arrayStartIndex = channel * 6
+
+        let byte6 = nunchuckByteArray[arrayStartIndex + 5];
+        let byte5 = nunchuckByteArray[arrayStartIndex + 4];
+        let byte4 = nunchuckByteArray[arrayStartIndex + 3];
+        let byte3 = nunchuckByteArray[arrayStartIndex + 2];
+        let byte2 = nunchuckByteArray[arrayStartIndex + 1];
+        let byte1 = nunchuckByteArray[arrayStartIndex + 0];
+        
         let accelX = ((byte3 << 2) | ((byte6 >> 2) & 0x3))
         let accelY = ((byte4 << 2) | ((byte6 >> 4) & 0x3))
         let accelZ = ((byte5 << 2) | ((byte6 >> 6) & 0x3))
         return -(Math.atan2((accelY - 511.0), (accelZ - 511.0)) * 180.0 / Math.PI);
-        
+    }
+}
 
+/**
+ * Blocks
+ */
+//% weight=100 color=#8e44ad icon="\uf125" block="I2cMux"
+
+namespace I2CMUX {
+    //% block="Initialize i2c Mux (PCA9546A) at i2c Address |addr %addr" 
+    export function initAddr(addr: ADDRESS) {
+        _pca9546ai2cAddr = addr;
+        _lastActiveChannel = 0;    // No Active
     }
 
-   
+    function PCA9546SelectChannel(channel:number, revertLastActive: boolean): boolean {
+        let _storedLastChannel = _lastActiveChannel
+
+        // Sanity check value passed.  Only least significant 4 bits valid
+        if (channel <= 0xf)
+        {
+             _lastActiveChannel = channel
+            i2c_write(channel);
+
+            if (revertLastActive) {
+               _lastActiveChannel = _storedLastChannel
+               i2c_write(_storedLastChannel);
+            }
+
+            return true;
+        }
+        else
+        {
+            return false;
+        }  
+    }
+
+    function i2c_write(data:number) {
+        pins.i2cWriteNumber(
+        _pca9546ai2cAddr,
+        data,      // 0x, 0xF0
+        NumberFormat.UInt8LE,
+        false
+        )
+          
+    }
 
 }
+
