@@ -119,6 +119,8 @@ namespace MULTINUNCHUCK {
         let byte2 = nunchuckByteArray[arrayStartIndex + 1];
         let byte1 = nunchuckByteArray[arrayStartIndex + 0];
 
+        PCA9546SelectChannel(channel, true)
+
         if (ctrlState == CTRL_STATE.UP) {
             return (byte2 > 150) ? 1: 0;
         }
@@ -163,6 +165,8 @@ namespace MULTINUNCHUCK {
         let byte2 = nunchuckByteArray[arrayStartIndex + 1];
         let byte1 = nunchuckByteArray[arrayStartIndex + 0];
 
+        PCA9546SelectChannel(channel, true)
+
         let accelX = ((byte3 << 2) | ((byte6 >> 2) & 0x3))
         let accelY = ((byte4 << 2) | ((byte6 >> 4) & 0x3))
         let accelZ = ((byte5 << 2) | ((byte6 >> 6) & 0x3))
@@ -180,7 +184,9 @@ namespace MULTINUNCHUCK {
         let byte3 = nunchuckByteArray[arrayStartIndex + 2];
         let byte2 = nunchuckByteArray[arrayStartIndex + 1];
         let byte1 = nunchuckByteArray[arrayStartIndex + 0];
-        
+
+        PCA9546SelectChannel(channel, true)
+
         let accelX = ((byte3 << 2) | ((byte6 >> 2) & 0x3))
         let accelY = ((byte4 << 2) | ((byte6 >> 4) & 0x3))
         let accelZ = ((byte5 << 2) | ((byte6 >> 6) & 0x3))
@@ -198,6 +204,12 @@ namespace I2CMUX {
     export function initAddr(addr: ADDRESS) {
         _pca9546ai2cAddr = addr;
         _lastActiveChannel = 0;    // No Active
+    }
+
+    /% block="Set active i2C Channel to %channel"
+    //% channel.min=0 group.max=4
+    export function selectActiveChannel(channel: number) {
+            PCA9546SelectChannel(channel, false)
     }
 
     function PCA9546SelectChannel(channel:number, revertLastActive: boolean): boolean {
