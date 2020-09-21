@@ -202,8 +202,6 @@ namespace I2CMUX {
     //% block="Set active i2C Channel to %channel"
     //% channel.min=0 channel.max=4
     export function PCA9546SelectChannel(channel:number): boolean {
-        let _storedLastChannel = _lastActiveChannel
-
         // Sanity check value passed.  Only least significant 4 bits valid
         if (channel <= 0xf)
         { 
