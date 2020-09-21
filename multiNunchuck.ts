@@ -154,7 +154,7 @@ namespace MULTINUNCHUCK {
             NumberFormat.Int8LE,
             false
         )
-        basic.pause(250)
+        //basic.pause(250)
         nunchuckByteArray[arrayStartIndex + 0] = pins.i2cReadNumber(82, NumberFormat.UInt8LE, true)
         nunchuckByteArray[arrayStartIndex + 1] = pins.i2cReadNumber(82, NumberFormat.UInt8LE, true)
         nunchuckByteArray[arrayStartIndex + 2] = pins.i2cReadNumber(82, NumberFormat.UInt8LE, true)
@@ -201,6 +201,10 @@ namespace I2CMUX {
     
     //% block="Set active i2C Channel to %channel"
     //% channel.min=0 channel.max=4
+    export function _PCA9546SelectChannel(channel:number) {
+        PCA9546SelectChannel(channel)
+    }
+    
     export function PCA9546SelectChannel(channel:number): boolean {
         // Sanity check value passed.  Only least significant 4 bits valid
         if (channel <= 0xf)
