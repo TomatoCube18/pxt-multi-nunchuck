@@ -73,8 +73,6 @@ namespace MULTINUNCHUCK {
         let byte2 = nunchuckByteArray[arrayStartIndex + 1];
         let byte1 = nunchuckByteArray[arrayStartIndex + 0];
 
-        I2CMUX.PCA9546SelectChannel(channel, true)
-
         let accelX = ((byte3 << 2) | ((byte6 >> 2) & 0x3))
         let accelY = ((byte4 << 2) | ((byte6 >> 4) & 0x3))
         let accelZ = ((byte5 << 2) | ((byte6 >> 6) & 0x3))
@@ -93,8 +91,6 @@ namespace MULTINUNCHUCK {
         let byte2 = nunchuckByteArray[arrayStartIndex + 1];
         let byte1 = nunchuckByteArray[arrayStartIndex + 0];
 
-        I2CMUX.PCA9546SelectChannel(channel, true)
-
         let accelX = ((byte3 << 2) | ((byte6 >> 2) & 0x3))
         let accelY = ((byte4 << 2) | ((byte6 >> 4) & 0x3))
         let accelZ = ((byte5 << 2) | ((byte6 >> 6) & 0x3))
@@ -112,8 +108,6 @@ namespace MULTINUNCHUCK {
         let byte3 = nunchuckByteArray[arrayStartIndex + 2];
         let byte2 = nunchuckByteArray[arrayStartIndex + 1];
         let byte1 = nunchuckByteArray[arrayStartIndex + 0];
-
-        I2CMUX.PCA9546SelectChannel(channel, true)
 
         if (ctrlState == CTRL_STATE.UP) {
             return (byte2 > 150) ? 1: 0;
@@ -150,7 +144,9 @@ namespace MULTINUNCHUCK {
     //% channel.min=1 channel.max=4 channel.defl=1
     export function ReadToBuffer(channel: number) {
         let arrayStartIndex = channel * 6
-        I2CMUX.PCA9546SelectChannel(channel, true)
+        let restoreChannel = _lastActiveChannel
+        
+        I2CMUX.PCA9546SelectChannel(channel)
 
         pins.i2cWriteNumber(
             _addr,
@@ -165,14 +161,17 @@ namespace MULTINUNCHUCK {
         nunchuckByteArray[arrayStartIndex + 3] = pins.i2cReadNumber(82, NumberFormat.UInt8LE, true)
         nunchuckByteArray[arrayStartIndex + 4] = pins.i2cReadNumber(82, NumberFormat.UInt8LE, true)
         nunchuckByteArray[arrayStartIndex + 5] = pins.i2cReadNumber(82, NumberFormat.UInt8LE, false)
+        
+        I2CMUX.PCA9546SelectChannel(restoreChannel)
     }
     
     //% block="Initialize Nunchuck at Channel%channel" 
     //% channel.min=1 channel.max=4 channel.defl=1
     export function initNunchuck(channel: number) {
         _addr = 0x52;
-
-        I2CMUX.PCA9546SelectChannel(channel, true)
+        let restoreChannel = _lastActiveChannel
+        
+        I2CMUX.PCA9546SelectChannel(channel)
 
         pins.i2cWriteNumber(
         _addr,
@@ -187,7 +186,8 @@ namespace MULTINUNCHUCK {
         NumberFormat.UInt16LE,
         false
         )
-
+        
+        I2CMUX.PCA9546SelectChannel(restoreChannel)
         basic.pause(100)
     }
 }
@@ -201,8 +201,21 @@ namespace I2CMUX {
     
     //% block="Set active i2C Channel to %channel"
     //% channel.min=0 channel.max=4
-    export function selectActiveChannel(channel: number) {
-            PCA9546SelectChannel(channel, false)
+    export function PCA9546SelectChannel(channel:number): boolean {
+        let _storedLastChannel = _lastActiveChannel
+
+        // Sanity check value passed.  Only least significant 4 bits valid
+        if (channel <= 0xf)
+        { 
+            i2c_write(channel);
+            _lastActiveChannel = channel
+            
+            return true;
+        }
+        else
+        {
+            return false;
+        }  
     }
 
     //% block="Initialize i2c Mux (PCA9546A) at i2c Address %addr" 
@@ -211,28 +224,6 @@ namespace I2CMUX {
         _lastActiveChannel = 0;    // No Active
     }
 
-
-    export function PCA9546SelectChannel(channel:number, revertLastActive: boolean): boolean {
-        let _storedLastChannel = _lastActiveChannel
-
-        // Sanity check value passed.  Only least significant 4 bits valid
-        if (channel <= 0xf)
-        {
-             _lastActiveChannel = channel
-            i2c_write(channel);
-
-            if (revertLastActive) {
-               _lastActiveChannel = _storedLastChannel
-               i2c_write(_storedLastChannel);
-            }
-
-            return true;
-        }
-        else
-        {
-            return false;
-        }  
-    }
 
     function i2c_write(data:number) {
         pins.i2cWriteNumber(
