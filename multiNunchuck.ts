@@ -212,7 +212,7 @@ namespace I2CMUX {
     }
 
 
-    function PCA9546SelectChannel(channel:number, revertLastActive: boolean): boolean {
+    export function PCA9546SelectChannel(channel:number, revertLastActive: boolean): boolean {
         let _storedLastChannel = _lastActiveChannel
 
         // Sanity check value passed.  Only least significant 4 bits valid
