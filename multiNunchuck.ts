@@ -5,8 +5,8 @@
 
 let _addr = 0x52;
 
-var nunchuckByteArray = new Uint8Array(24); // 6 bytes * 4 controller
-
+//var nunchuckByteArray = new Uint8Array(24); // 6 bytes * 4 controller
+let nunchuckByteArray: number[] = [];
 
 enum CTRL_STATE {
     //% block=UP
@@ -73,7 +73,7 @@ namespace MULTINUNCHUCK {
         let byte2 = nunchuckByteArray[arrayStartIndex + 1];
         let byte1 = nunchuckByteArray[arrayStartIndex + 0];
 
-        PCA9546SelectChannel(channel, true)
+        I2CMUX.PCA9546SelectChannel(channel, true)
 
         let accelX = ((byte3 << 2) | ((byte6 >> 2) & 0x3))
         let accelY = ((byte4 << 2) | ((byte6 >> 4) & 0x3))
@@ -93,7 +93,7 @@ namespace MULTINUNCHUCK {
         let byte2 = nunchuckByteArray[arrayStartIndex + 1];
         let byte1 = nunchuckByteArray[arrayStartIndex + 0];
 
-        PCA9546SelectChannel(channel, true)
+        I2CMUX.PCA9546SelectChannel(channel, true)
 
         let accelX = ((byte3 << 2) | ((byte6 >> 2) & 0x3))
         let accelY = ((byte4 << 2) | ((byte6 >> 4) & 0x3))
@@ -113,7 +113,7 @@ namespace MULTINUNCHUCK {
         let byte2 = nunchuckByteArray[arrayStartIndex + 1];
         let byte1 = nunchuckByteArray[arrayStartIndex + 0];
 
-        PCA9546SelectChannel(channel, true)
+        I2CMUX.PCA9546SelectChannel(channel, true)
 
         if (ctrlState == CTRL_STATE.UP) {
             return (byte2 > 150) ? 1: 0;
@@ -150,7 +150,7 @@ namespace MULTINUNCHUCK {
     //% channel.min=1 channel.max=4 channel.defl=1
     export function ReadToBuffer(channel: number) {
         let arrayStartIndex = channel * 6
-        PCA9546SelectChannel(channel, true)
+        I2CMUX.PCA9546SelectChannel(channel, true)
 
         pins.i2cWriteNumber(
             _addr,
@@ -172,7 +172,7 @@ namespace MULTINUNCHUCK {
     export function initNunchuck(channel: number) {
         _addr = 0x52;
 
-        PCA9546SelectChannel(channel, true)
+        I2CMUX.PCA9546SelectChannel(channel, true)
 
         pins.i2cWriteNumber(
         _addr,
